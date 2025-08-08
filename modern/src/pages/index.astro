@@ -1,0 +1,108 @@
+---
+import personalities from '../data/personalities.json';
+const groups = Array.from(new Set(personalities.map((p) => p.groupNo))).sort((a,b)=>a-b);
+function getGroupTerms(groupNo) {
+  return personalities.filter((p) => p.groupNo === groupNo);
+}
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DISC Assessment</title>
+    <link rel="icon" href="/favicon.ico" />
+    <style>
+      body{font-family: system-ui, sans-serif; margin:0; padding:20px;}
+      .grid{display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; align-items:center}
+      .row{border-bottom:1px solid #eee; padding:8px 0}
+      .term{display:flex; align-items:center; gap:8px}
+      .sticky{position: sticky; top: 0; background: #fff; z-index: 1; padding: 8px 0; border-bottom: 1px solid #ddd}
+      .actions{margin-top:16px}
+    </style>
+    <script type="module">
+      const storageKey = 'disc:v1:progress';
+      function saveProgress() {
+        const form = document.querySelector('form');
+        const data = new FormData(form);
+        const state = { m: {}, l: {} };
+        for (const [key, value] of data.entries()) {
+          if (key.startsWith('m[')) state.m[key.slice(2,-1)] = value;
+          if (key.startsWith('l[')) state.l[key.slice(2,-1)] = value;
+        }
+        localStorage.setItem(storageKey, JSON.stringify(state));
+      }
+      function restoreProgress() {
+        const raw = localStorage.getItem(storageKey);
+        if (!raw) return;
+        try {
+          const state = JSON.parse(raw);
+          for (const idx in state.m) {
+            const v = state.m[idx];
+            const input = document.querySelector(`input[name="m[${idx}]\"][value="${v}"]`);
+            if (input) input.checked = true;
+          }
+          for (const idx in state.l) {
+            const v = state.l[idx];
+            const input = document.querySelector(`input[name="l[${idx}]\"][value="${v}"]`);
+            if (input) input.checked = true;
+          }
+        } catch {}
+      }
+      addEventListener('change', (e) => {
+        if (e.target instanceof HTMLInputElement) saveProgress();
+      });
+      addEventListener('DOMContentLoaded', restoreProgress);
+      addEventListener('submit', (e) => {
+        const form = e.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        e.preventDefault();
+        const data = new FormData(form);
+        const params = new URLSearchParams();
+        for (const [key, value] of data.entries()) params.append(key, String(value));
+        // Navigate client-side to /result with query string
+        const url = '/result?' + params.toString();
+        location.href = url;
+      });
+    </script>
+  </head>
+  <body>
+    <h1>DISC Assessment</h1>
+    <p>Select one “Most” and one “Least” per row.</p>
+    <form>
+      <div class="grid sticky" role="row">
+        <div>Terms</div>
+        <div>Most</div>
+        <div>Least</div>
+      </div>
+      {groups.map((g) => (
+        <div class="row" role="row">
+          <div>
+            {getGroupTerms(g).map((t) => (
+              <div class="term">
+                <span>{t.term}</span>
+              </div>
+            ))}
+          </div>
+          <div>
+            {getGroupTerms(g).map((t, idx) => (
+              <label style="display:block">
+                <input type="radio" name={`m[${g}]`} value={t.mostMark} required /> {idx+1}
+              </label>
+            ))}
+          </div>
+          <div>
+            {getGroupTerms(g).map((t, idx) => (
+              <label style="display:block">
+                <input type="radio" name={`l[${g}]`} value={t.leastMark} required /> {idx+1}
+              </label>
+            ))}
+          </div>
+        </div>
+      ))}
+      <div class="actions">
+        <button type="submit">See Result</button>
+        <button type="button" onclick="localStorage.removeItem('disc:v1:progress'); location.reload()">Reset</button>
+      </div>
+    </form>
+  </body>
+</html>
