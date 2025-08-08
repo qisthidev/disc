@@ -8,7 +8,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "format": "prettier -w .",
-    "gen:data": "node ./scripts/sql-to-json.mjs"
+    "gen:data": "node ./scripts/sql-to-json.mjs",
+    "seed": "node ./scripts/seed-from-csv.mjs"
   },
   "dependencies": {
     "astro": "^4.12.2"
